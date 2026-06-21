@@ -2,6 +2,7 @@
 #include <Carbon/Carbon.h>
 
 #include "hotkeys.h"
+#include "spaces.h"
 #include "windows.h"
 
 
@@ -12,7 +13,6 @@ static CGEventRef event_cb(CGEventTapProxy proxy, CGEventType type, CGEventRef e
     CGEventFlags flags = CGEventGetFlags(event);
 
     // TODO: Check for hk in data
-
 
     // > > > temp
     bool cmd = flags & kCGEventFlagMaskCommand;
@@ -28,10 +28,13 @@ static CGEventRef event_cb(CGEventTapProxy proxy, CGEventType type, CGEventRef e
             case kVK_ANSI_K: wm_snap_bottom_right(data);    return NULL;
             case kVK_ANSI_C: wm_center_window();            return NULL;
 
-            case kVK_ANSI_M: wm_minimize_window(data);     return NULL;
+            case kVK_ANSI_1: wm_space_switch_to(data, 0);   return NULL;
+            case kVK_ANSI_2: wm_space_switch_to(data, 1);   return NULL;
 
-            case kVK_ANSI_Equal: wm_expand_window(data);    return NULL;
-            case kVK_ANSI_Minus: wm_shrink_window(data);    return NULL;
+            case kVK_ANSI_M: wm_change_current_window_space(data, 0); return NULL;
+
+            case kVK_ANSI_Equal: wm_expand_window(data);   return NULL;
+            case kVK_ANSI_Minus: wm_shrink_window(data);   return NULL;
         }
     }
     // < < <

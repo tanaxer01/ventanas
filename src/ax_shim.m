@@ -7,14 +7,56 @@ WMWindow ax_get_focused_window(void) {
         [NSWorkspace.sharedWorkspace frontmostApplication].processIdentifier
     );
     AXUIElementRef window = NULL;
-    AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute, (CFTypeRef*)&window);
+    AXError err = AXUIElementCopyAttributeValue(app, kAXFocusedWindowAttribute, (CFTypeRef*)&window);
     CFRelease(app);
+    if (err != kAXErrorSuccess) return NULL;
     return (void*)window;  // caller owns this
+}
+
+int ax_get_all_windows(WMWindow *windows, int max_windows) {
+    if (max_windows <= 0) return 0;
+
+    int count = 0;
+
+    for (NSRunningApplication *app in NSWorkspace.sharedWorkspace.runningApplications) {
+        if (app.activationPolicy != NSApplicationActivationPolicyRegular) continue;
+
+        AXUIElementRef axApp = AXUIElementCreateApplication(app.processIdentifier);
+        if (!axApp) continue;
+
+        CFArrayRef axWindows = NULL;
+        AXError err = AXUIElementCopyAttributeValue(
+            axApp,
+            kAXWindowsAttribute,
+            (CFTypeRef *)&axWindows
+        );
+
+        if (err == kAXErrorSuccess && axWindows) {
+            CFIndex n = CFArrayGetCount(axWindows);
+
+            for (CFIndex i = 0; i < n && count < max_windows; i++) {
+                AXUIElementRef win = (AXUIElementRef)CFArrayGetValueAtIndex(axWindows, i);
+                if (!win) continue;
+
+                CFRetain(win); // keep it alive after releasing axWindows
+                windows[count++] = (WMWindow)win;
+            }
+
+            CFRelease(axWindows);
+        }
+
+        CFRelease(axApp);
+
+        if (count >= max_windows) break;
+    }
+
+    return count;
 }
 
 void ax_move_window(WMWindow win, int x, int y) {
     CGPoint pos = CGPointMake(x, y);
     AXValueRef val = AXValueCreate(kAXValueCGPointType, &pos);
+    if (!val) return;
     AXUIElementSetAttributeValue((AXUIElementRef)win, kAXPositionAttribute, val);
     CFRelease(val);
 }
@@ -22,6 +64,7 @@ void ax_move_window(WMWindow win, int x, int y) {
 void ax_resize_window(WMWindow win, int width, int height) {
     CGSize size = CGSizeMake(width, height);
     AXValueRef val = AXValueCreate(kAXValueCGSizeType, &size);
+    if (!val) return;
     AXUIElementSetAttributeValue((AXUIElementRef)win, kAXSizeAttribute, val);
     CFRelease(val);
 }
@@ -45,29 +88,31 @@ WMRect ax_get_screen_frame(void) {
 }
 
 WMRect ax_get_window_frame(WMWindow win) {
-    CGPoint pos;
-    CGSize size;
+    CGPoint pos = CGPointZero;
+    CGSize size = CGSizeZero;
 
-    AXValueRef val;
+    AXValueRef val = NULL;
 
-    AXUIElementCopyAttributeValue((AXUIElementRef)win, kAXPositionAttribute, (CFTypeRef*)&val);
-    AXValueGetValue(val, kAXValueCGPointType, &pos);
+    AXError err = AXUIElementCopyAttributeValue((AXUIElementRef)win, kAXPositionAttribute, (CFTypeRef*)&val);
+    if (err != kAXErrorSuccess || !val) return (WMRect){0};
+    if (!AXValueGetValue(val, kAXValueCGPointType, &pos)) {
+        CFRelease(val);
+        return (WMRect){0};
+    }
     CFRelease(val);
 
-    AXUIElementCopyAttributeValue((AXUIElementRef)win, kAXSizeAttribute, (CFTypeRef*)&val);
-    AXValueGetValue(val, kAXValueCGSizeType, &size);
+    val = NULL;
+    err = AXUIElementCopyAttributeValue((AXUIElementRef)win, kAXSizeAttribute, (CFTypeRef*)&val);
+    if (err != kAXErrorSuccess || !val) return (WMRect){0};
+    if (!AXValueGetValue(val, kAXValueCGSizeType, &size)) {
+        CFRelease(val);
+        return (WMRect){0};
+    }
     CFRelease(val);
 
     return (WMRect){ pos.x, pos.y, size.width, size.height };
 }
 
-bool ax_minimize_window(WMWindow win, bool minimized) {
-    CFBooleanRef value = minimized ? kCFBooleanTrue : kCFBooleanFalse;
-    AXError err = AXUIElementSetAttributeValue(
-        (AXUIElementRef)win,
-        kAXMinimizedAttribute,
-        value
-    );
-
-    return err == kAXErrorSuccess;
+void ax_release_window(WMWindow win) {
+    if (win) CFRelease((AXUIElementRef)win);
 }

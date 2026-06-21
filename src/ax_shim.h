@@ -12,4 +12,5 @@ void     ax_resize_window(WMWindow win, int width, int height);
 WMRect ax_get_screen_frame(void);
 WMRect ax_get_window_frame(WMWindow win);
 
-bool ax_minimize_window(WMWindow win, bool minimized);
+int ax_get_all_windows(WMWindow *windows, int max_windows);
+void ax_release_window(WMWindow win);
