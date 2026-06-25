@@ -1,9 +1,103 @@
 #include <stdio.h>
 
 #include "windows.h"
+#include "application.h"
 #include "ax_shim.h"
 #include "wm.h"
 
+// WINDOW
+
+struct window *window_create(struct application *application, AXUIElementRef window_ref, uint32_t window_id) {
+    struct window *window = malloc(sizeof(struct window));
+    memset(window, 0, sizeof(struct window));
+
+    window->application = application;
+    window->ref = window_ref;
+    window->id = window_id;
+    window->frame = window_ax_frame(window);
+
+   return window;
+}
+
+void window_destroy(struct window *window) {
+    window->id = 0;
+
+    CFRelease(window->ref);
+    free(window);
+}
+
+// WM ----
+
+void wm_move_window(struct window *window, float x, float y) {
+    CGPoint position = CGPointMake(x, y);
+    CFTypeRef position_ref = AXValueCreate(kAXValueTypeCGPoint, (void *) &position);
+    if (!position_ref) return;
+
+    AXUIElementSetAttributeValue(window->ref, kAXPositionAttribute, position_ref);
+    CFRelease(position_ref);
+}
+
+void wm_resize_window(struct window *window, float width, float height) {
+    CGSize size = CGSizeMake(width, height);
+    CFTypeRef size_ref = AXValueCreate(kAXValueCGSizeType, (void *) &size);
+    if (!size_ref) return;
+
+    AXUIElementSetAttributeValue(window->ref, kAXSizeAttribute, size_ref);
+    CFRelease(size_ref);
+}
+
+struct window *wm_focused_window(struct window_manager *wm) {
+    struct application *apk = wm_focused_application(wm);
+    if (!apk) return NULL;
+
+    uint32_t win_id = apk_focused_window(apk);
+    return wm_find_window(wm, win_id);
+}
+
+// TODO: Alternative to SLS needed
+struct application *wm_focused_application(struct window_manager *wm) {
+    return NULL;
+}
+
+
+// TODO: Use hashtable or wat ?
+// > > >
+struct window *wm_find_window(struct window_manager *wm, uint32_t window_id) {
+    return NULL;
+}
+
+void wm_remove_window(struct window_manager *wm, uint32_t window_id) {
+}
+
+void wm_add_window(struct window_manager *wm, struct window *window) {
+}
+
+struct application *wm_find_application(struct window_manager *wm, pid_t pid) {
+    return NULL;
+}
+
+void wm_remove_application(struct window_manager *wm, pid_t pid) {
+}
+
+void wm_add_application(struct window_manager *wm, struct application *application) {
+}
+
+struct window **window_manager_find_application_windows(struct window_manager *wm, struct application *application, int *window_count) {
+    return NULL;
+}
+// < < <
+
+void wm_init(struct window_manager *wm) {
+    // wm->system_element = AXUIElementCreateSystemWide();
+    // AXUIElementSetMessagingTimeout(wm->system_element, 1.0);
+
+
+
+}
+
+
+
+// OLD
 
 // TODO: handle errors
 
