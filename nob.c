@@ -14,7 +14,7 @@ int main(int argc, char **argv) {
         "-framework", "Cocoa",
         "-framework", "Carbon",
         "-framework", "ApplicationServices",
-        SRC_FOLDER"windows.c", SRC_FOLDER"hotkeys.c", SRC_FOLDER"spaces.c", SRC_FOLDER"ax_shim.m", SRC_FOLDER"main.c");
+        SRC_FOLDER"windows.c", SRC_FOLDER"hotkeys.c", SRC_FOLDER"spaces.c", SRC_FOLDER"ax_shim.m", SRC_FOLDER"application.c", SRC_FOLDER"main.c");
     if (!nob_cmd_run(&cmd)) return 1;
 
 }

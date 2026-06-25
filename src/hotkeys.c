@@ -17,6 +17,7 @@ static CGEventRef event_cb(CGEventTapProxy proxy, CGEventType type, CGEventRef e
     // > > > temp
     bool cmd = flags & kCGEventFlagMaskCommand;
     bool opt = flags & kCGEventFlagMaskAlternate;
+    bool shift = flags & kCGEventFlagMaskShift;
 
     if (cmd && opt) {
         switch (keycode) {
@@ -28,11 +29,24 @@ static CGEventRef event_cb(CGEventTapProxy proxy, CGEventType type, CGEventRef e
             case kVK_ANSI_K: wm_snap_bottom_right(data);    return NULL;
             case kVK_ANSI_C: wm_center_window();            return NULL;
 
-            case kVK_ANSI_1: wm_space_switch_to(data, 0);   return NULL;
-            case kVK_ANSI_2: wm_space_switch_to(data, 1);   return NULL;
-
-            case kVK_ANSI_M: wm_change_current_window_space(data, 0); return NULL;
-
+            case kVK_ANSI_1:
+                if (shift)
+                    wm_change_space(data, 0);
+                else
+                    ws_switch_to(data, 0);
+                return NULL;
+            case kVK_ANSI_2:
+                if (shift)
+                    wm_change_space(data, 1);
+                else
+                    ws_switch_to(data, 1);
+                return NULL;
+            case kVK_ANSI_3:
+                if (shift)
+                    wm_change_space(data, 1);
+                else
+                    ws_switch_to(data, 2);
+                return NULL;
             case kVK_ANSI_Equal: wm_expand_window(data);   return NULL;
             case kVK_ANSI_Minus: wm_shrink_window(data);   return NULL;
         }

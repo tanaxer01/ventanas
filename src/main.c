@@ -12,7 +12,7 @@ int main() {
         .config = { .padding = 10, .center_on_resize = true },
     };
 
-    space_init(&ctx);
+    ws_init(&ctx);
     hk_init(&ctx);
 
     CFRunLoopRun();
